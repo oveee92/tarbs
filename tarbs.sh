@@ -226,3 +226,36 @@ newperms "%wheel ALL=(ALL) ALL #TARBS
 # Last message! Install complete!
 finalize
 clear
+
+# Set keyboard settings
+localectl set-keymap no
+localectl set-x11-keymap no
+
+# Install plugin for i3 syntax highlighting
+cd ~/.config/nvim/plugged/
+git clone https://github.com/PotatoesMaster/i3-vim-syntax.git
+
+# Replace greeter session with custom
+sudo sed -i '/greeter-session/ s/=.*/=lightdm-webkit2-greeter/' /etc/lightdm/lightdm.conf
+
+# Replace theme with custom
+sudo sed -i '/^webkit_theme/ s/=.*/= litarvan/' /etc/lightdm/lightdm-webkit2-greeter.conf
+
+# Add custom profile picture on login screen
+sudo rm /usr/share/lightdm-webkit/themes/litarvan/images/default_user.png
+sudo cp ~/.icons/default_user.png /usr/share/lightdm-webkit/themes/litarvan/images/
+
+# Make sure the login screen is started when booting
+sudo systemctl enable lightdm
+
+# Installing and configuring dropbox. Will autostart from i3
+cd ~ && wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
+~/.dropbox-dist/dropboxd
+wget -O - "https://www.dropbox.com/download?dl=packages/dropbox.py" > ~/.dropbox/dropboxscript.py
+chmod 775 ~/.dropbox/dropboxscript.py
+
+# Prepare for mutt-wizard install
+echo "Initiating gpg keygen. Please follow the instructions."
+gpg2 --full-gen-key
+echo "All done! Use the command pass --init <gpg2 email> and then use mw add to configure mutt."
+
