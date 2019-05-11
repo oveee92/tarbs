@@ -4,11 +4,12 @@
 
 ### OPTIONS AND VARIABLES ###
 
-while getopts ":a:r:p:h" o; do case "${o}" in
+while getopts ":a:r:p:h:w" o; do case "${o}" in
 	h) printf "Optional arguments for custom use:\\n  -r: Dotfiles repository (local file or url)\\n  -p: Dependencies and programs csv (local file or url)\\n  -a: AUR helper (must have pacman-like syntax)\\n  -h: Show this message\\n" && exit ;;
 	r) dotfilesrepo=${OPTARG} && git ls-remote "$dotfilesrepo" || exit ;;
 	p) progsfile=${OPTARG} ;;
 	a) aurhelper=${OPTARG} ;;
+	w) wallpapers=${OPTARG} ;;
 	*) printf "Invalid option: -%s\\n" "$OPTARG" && exit ;;
 esac done
 
@@ -16,6 +17,7 @@ esac done
 [ -z "$dotfilesrepo" ] && dotfilesrepo="https://github.com/oveee92/.dotfiles.git"
 [ -z "$progsfile" ] && progsfile="https://raw.githubusercontent.com/oveee92/tarbs/master/progs.csv"
 [ -z "$aurhelper" ] && aurhelper="yay"
+[ -z "$wallpapers" ] && wallpapers="https://github.com/oveee92/wallpapers.git"
 
 ### FUNCTIONS ###
 
@@ -199,8 +201,8 @@ installationloop
 putgitrepo "$dotfilesrepo" "/home/$name"
 rm -f "/home/$name/README.md" "/home/$name/LICENSE"
 
-# Install the LARBS Firefox profile in ~/.mozilla/firefox/
-#putgitrepo "https://github.com/LukeSmithxyz/mozillarbs.git" "/home/$name/.mozilla/firefox" # Not using Firefox...
+# Download wallpapers from github
+putgitrepo "$wallpapers" "/home/$name/Pictures/" || error "Failed to download wallpapers."
 
 # Pulseaudio, if/when initially installed, often needs a restart to work immediately.
 [ -f /usr/bin/pulseaudio ] && resetpulse
@@ -228,6 +230,13 @@ finalize
 clear
 
 # Set keyboard settings
+sudo sed -i '/nb_NO/ s/#//' /etc/locale.gen
+sudo sed -i '/en_US/ s/#//' /etc/locale.gen
+sudo locale-gen
+sudo echo "LANG=en_US.utf8" >> /etc/locale.conf
+sudo echo 'LC_CTYPE="nb_NO.utf8"' >> /etc/locale.conf
+sudo echo 'LC_MESSAGES="en_US.utf8"' >> /etc/locale.conf
+sudo echo 'LC_COLLATE="en_US.utf8"' >> /etc/locale.conf
 localectl set-keymap no
 localectl set-x11-keymap no
 
@@ -249,6 +258,7 @@ sudo cp ~/.icons/default_user.png /usr/share/lightdm-webkit/themes/litarvan/imag
 sudo systemctl enable lightdm
 
 # Installing and configuring dropbox. Will autostart from i3
+echo "Installing dropbox. Follow instructions as they appear."
 cd ~ && wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
 ~/.dropbox-dist/dropboxd
 wget -O - "https://www.dropbox.com/download?dl=packages/dropbox.py" > ~/.dropbox/dropboxscript.py
