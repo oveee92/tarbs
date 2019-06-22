@@ -121,7 +121,7 @@ installationloop() { \
 	done < /tmp/progs.csv ;}
 
 putgitrepo() { # Downlods a gitrepo $1 and places the files in $2 only overwriting conflicts
-	dialog --infobox "Downloading and installing config files..." 4 60
+	dialog --infobox "$3" 4 60
 	dir=$(mktemp -d)
 	[ ! -d "$2" ] && mkdir -p "$2" && chown -R "$name:wheel" "$2"
 	chown -R "$name:wheel" "$dir"
@@ -199,14 +199,14 @@ manualinstall $aurhelper || error "Failed to install AUR helper."
 installationloop
 
 # Install the dotfiles in the user's home directory
-putgitrepo "$dotfilesrepo" "/home/$name"
+putgitrepo "$dotfilesrepo" "/home/$name" "Installing dotfiles..." || error "Failed to download dotfiles."
 rm -f "/home/$name/README.md" "/home/$name/LICENSE"
 
 # Download wallpapers from github
-putgitrepo "$wallpapers" "/home/$name/Pictures/wallpapers" || error "Failed to download wallpapers."
+putgitrepo "$wallpapers" "/home/$name/Pictures/wallpapers" "Downloading wallpapers..." || error "Failed to download wallpapers."
 
 # Download the tarbs repo from github
-putgitrepo "$tarbs" "/home/$name/.tarbs" || error "Failed to download tarbs."
+putgitrepo "$tarbs" "/home/$name/.tarbs" "Downloading tarbs..." || error "Failed to download tarbs."
 
 # Pulseaudio, if/when initially installed, often needs a restart to work immediately.
 [ -f /usr/bin/pulseaudio ] && resetpulse
