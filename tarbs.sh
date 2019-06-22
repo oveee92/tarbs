@@ -212,11 +212,11 @@ putgitrepo "$tarbs" "/home/$name/.tarbs" "Downloading tarbs..." || error "Failed
 [ -f /usr/bin/pulseaudio ] && resetpulse
 
 # Install vim `plugged` plugins.
-#sudo -u "$name" mkdir -p "/home/$name/.config/nvim/autoload"
-#curl "https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim" > "/home/$name/.config/nvim/autoload/plug.vim"
-#dialog --infobox "Installing (neo)vim plugins..." 4 50
-#(sleep 30 && killall nvim) &
-#sudo -u "$name" nvim -E -c "PlugUpdate|visual|q|q" >/dev/null 2>&1
+sudo -u "$name" mkdir -p "/home/$name/.config/nvim/autoload"
+curl "https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim" > "/home/$name/.config/nvim/autoload/plug.vim"
+dialog --infobox "Installing (neo)vim plugins..." 4 50
+(sleep 30 && killall nvim) &
+sudo -u "$name" nvim -E -c "PlugUpdate|visual|q|q" >/dev/null 2>&1
 
 # Enable services here.
 serviceinit NetworkManager cronie
@@ -245,8 +245,8 @@ localectl set-keymap no
 localectl set-x11-keymap no
 
 # Install plugin for i3 syntax highlighting
-cd /home/$name/.config/nvim/plugged/
-git clone https://github.com/PotatoesMaster/i3-vim-syntax.git
+# cd /home/$name/.config/nvim/plugged/
+# git clone https://github.com/PotatoesMaster/i3-vim-syntax.git
 
 # Replace greeter session with custom
 sudo sed -i '/greeter-session/ {s/^#//;s/=.*/=lightdm-webkit2-greeter/;}' /etc/lightdm/lightdm.conf
@@ -263,11 +263,12 @@ sudo systemctl enable lightdm
 
 # Make sure the network manager starts on boot
 sudo systemctl enable NetworkManager
-nmtui
+
 # Installing and configuring dropbox.
-echo "Installing dropbox. Follow instructions as they appear."
+echo "Installing dropbox."
 cd /home/$name && wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
 # Installing linux dropbox script
+cd /home/$name && mkdir .dropbox
 cd /home/$name && wget -O - "https://www.dropbox.com/download?dl=packages/dropbox.py" > /home/$name/.dropbox/dropboxscript.py
 chmod 775 /home/$name/.dropbox/dropboxscript.py
 # Will autostart on boot
