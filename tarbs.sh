@@ -18,6 +18,7 @@ esac done
 [ -z "$progsfile" ] && progsfile="https://raw.githubusercontent.com/oveee92/tarbs/master/progs.csv"
 [ -z "$aurhelper" ] && aurhelper="yay"
 [ -z "$wallpapers" ] && wallpapers="https://github.com/oveee92/wallpapers.git"
+[ -z "$tarbs" ] && tarbs="https://github.com/oveee92/tarbs.git"
 
 ### FUNCTIONS ###
 
@@ -202,7 +203,10 @@ putgitrepo "$dotfilesrepo" "/home/$name"
 rm -f "/home/$name/README.md" "/home/$name/LICENSE"
 
 # Download wallpapers from github
-putgitrepo "$wallpapers" "/home/$name/Pictures/" || error "Failed to download wallpapers."
+putgitrepo "$wallpapers" "/home/$name/Pictures/wallpapers" || error "Failed to download wallpapers."
+
+# Download the tarbs repo from github
+putgitrepo "$tarbs" "/home/$name/.tarbs" || error "Failed to download tarbs."
 
 # Pulseaudio, if/when initially installed, often needs a restart to work immediately.
 [ -f /usr/bin/pulseaudio ] && resetpulse
@@ -241,31 +245,38 @@ localectl set-keymap no
 localectl set-x11-keymap no
 
 # Install plugin for i3 syntax highlighting
-cd ~/.config/nvim/plugged/
+cd $HOME/.config/nvim/plugged/
 git clone https://github.com/PotatoesMaster/i3-vim-syntax.git
 
 # Replace greeter session with custom
-sudo sed -i '/greeter-session/ s/=.*/=lightdm-webkit2-greeter/' /etc/lightdm/lightdm.conf
+sudo sed -i '/greeter-session/ {s/^#//;s/=.*/=lightdm-webkit2-greeter/;}' /etc/lightdm/lightdm.conf
 
 # Replace theme with custom
 sudo sed -i '/^webkit_theme/ s/=.*/= litarvan/' /etc/lightdm/lightdm-webkit2-greeter.conf
 
 # Add custom profile picture on login screen
 sudo rm /usr/share/lightdm-webkit/themes/litarvan/images/default_user.png
-sudo cp ~/.icons/default_user.png /usr/share/lightdm-webkit/themes/litarvan/images/
+sudo cp -p $HOME/.icons/default_user.png /usr/share/lightdm-webkit/themes/litarvan/images/
 
 # Make sure the login screen is started when booting
 sudo systemctl enable lightdm
 
-# Installing and configuring dropbox. Will autostart from i3
+# Make sure the network manager starts on boot
+sudo systemctl enable NetworkManager
+nmtui
+# Installing and configuring dropbox.
 echo "Installing dropbox. Follow instructions as they appear."
-cd ~ && wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
-~/.dropbox-dist/dropboxd
-wget -O - "https://www.dropbox.com/download?dl=packages/dropbox.py" > ~/.dropbox/dropboxscript.py
-chmod 775 ~/.dropbox/dropboxscript.py
+cd $HOME && wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
+# Installing linux dropbox script
+cd $HOME && wget -O - "https://www.dropbox.com/download?dl=packages/dropbox.py" > $HOME/.dropbox/dropboxscript.py
+chmod 775 $HOME/.dropbox/dropboxscript.py
+# Will autostart on boot
+$HOME/.dropbox/dropboxscript.py autostart y
 
 # Prepare for mutt-wizard install
-echo "Initiating gpg keygen. Please follow the instructions."
+echo "Initiating gpg keygen. Please follow the instructions, and remember the email you insert."
 gpg2 --full-gen-key
-echo "All done! Use the command pass --init <gpg2 email> and then use mw add to configure mutt."
+read -p "Write the email you used for gpg2: " gpgemail
+pass init $gpgemail
 
+echo "All done! Use the command pass --init <gpg2 email> and then use mw add to configure mutt."
