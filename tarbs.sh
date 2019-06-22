@@ -245,7 +245,7 @@ localectl set-keymap no
 localectl set-x11-keymap no
 
 # Install plugin for i3 syntax highlighting
-cd $HOME/.config/nvim/plugged/
+cd /home/$name/.config/nvim/plugged/
 git clone https://github.com/PotatoesMaster/i3-vim-syntax.git
 
 # Replace greeter session with custom
@@ -256,7 +256,7 @@ sudo sed -i '/^webkit_theme/ s/=.*/= litarvan/' /etc/lightdm/lightdm-webkit2-gre
 
 # Add custom profile picture on login screen
 sudo rm /usr/share/lightdm-webkit/themes/litarvan/images/default_user.png
-sudo cp -p $HOME/.icons/default_user.png /usr/share/lightdm-webkit/themes/litarvan/images/
+sudo cp -p /home/$name/.icons/default_user.png /usr/share/lightdm-webkit/themes/litarvan/images/
 
 # Make sure the login screen is started when booting
 sudo systemctl enable lightdm
@@ -266,12 +266,12 @@ sudo systemctl enable NetworkManager
 nmtui
 # Installing and configuring dropbox.
 echo "Installing dropbox. Follow instructions as they appear."
-cd $HOME && wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
+cd /home/$name && wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
 # Installing linux dropbox script
-cd $HOME && wget -O - "https://www.dropbox.com/download?dl=packages/dropbox.py" > $HOME/.dropbox/dropboxscript.py
-chmod 775 $HOME/.dropbox/dropboxscript.py
+cd /home/$name && wget -O - "https://www.dropbox.com/download?dl=packages/dropbox.py" > /home/$name/.dropbox/dropboxscript.py
+chmod 775 /home/$name/.dropbox/dropboxscript.py
 # Will autostart on boot
-$HOME/.dropbox/dropboxscript.py autostart y
+/home/$name/.dropbox/dropboxscript.py autostart y
 
 # Prepare for mutt-wizard install
 echo "Initiating gpg keygen. Please follow the instructions, and remember the email you insert."
