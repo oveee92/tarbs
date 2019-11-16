@@ -141,7 +141,38 @@ systembeepoff() { dialog --infobox "Getting rid of that retarded error beep soun
 
 resetpulse() { dialog --infobox "Reseting Pulseaudio..." 4 50
 	killall pulseaudio
-	sudo -n "$name" pulseaudio --start ;}
+	sudo -n "$name" pulseaudio --start
+}
+
+configurekeyboard() {
+	sudo sed -i '/nb_NO/ s/#//' /etc/locale.gen
+	sudo sed -i '/en_US/ s/#//' /etc/locale.gen
+	sudo locale-gen
+	sudo echo "LANG=en_US.utf8" >> /etc/locale.conf
+	sudo echo 'LC_CTYPE="nb_NO.utf8"' >> /etc/locale.conf
+	sudo echo 'LC_MESSAGES="en_US.utf8"' >> /etc/locale.conf
+	sudo echo 'LC_COLLATE="en_US.utf8"' >> /etc/locale.conf
+	localectl set-keymap no
+}
+
+changetheme() {
+	# Replace greeter session with custom if installed
+	pacman -Qi lightdm-webkit2-greeter 2>/dev/null || sudo sed -i '/greeter-session/ {s/^#//;s/=.*/=lightdm-webkit2-greeter/;}' /etc/lightdm/lightdm.conf
+
+	# Replace theme with custom (litarvan) if installed
+	pacman -Qi lightdm-webkit-theme-litarvan 2>/dev/null || sudo sed -i '/^webkit_theme/ s/=.*/= litarvan/' /etc/lightdm/lightdm-webkit2-greeter.conf
+
+	# Add custom profile picture on login screen if litarvan is installed and if picture exists
+	pacman -Qi lightdm-webkit-theme-litarvan 2>/dev/null || sudo cp -p /home/$name/.icons/default_user.png /usr/share/lightdm-webkit/themes/litarvan/images/default_user.png
+}
+
+initgpg() {
+	echo "Initiating gpg keygen. Please follow the instructions, and remember the email you insert."
+	gpg2 --full-gen-key
+	read -p "Write the email you used for gpg2: " gpgemail
+	pass init $gpgemail
+	echo "All done! Use the command pass --init <gpg2 email> and then use mw add to configure mutt."
+}
 
 finalize(){ \
 	dialog --infobox "Preparing welcome message..." 4 50
@@ -203,7 +234,9 @@ putgitrepo "$dotfilesrepo" "/home/$name" "Installing dotfiles..." || error "Fail
 rm -f "/home/$name/README.md" "/home/$name/LICENSE"
 
 # Download wallpapers from github
-putgitrepo "$wallpapers" "/home/$name/Pictures/wallpapers" "Downloading wallpapers..." || error "Failed to download wallpapers."
+dialog --colors --title "Download Ove's wallpapers?" --yes-label "Yes!" --no-label "I'll find my own." --yesno "Allright, stand by. This might take a while as the repo is pretty big!" 14 70 \
+	|| putgitrepo "$wallpapers" "/home/$name/Pictures/wallpapers" "Downloading wallpapers..." \
+	|| error "Failed to download wallpapers."
 
 # Download the tarbs repo from github
 putgitrepo "$tarbs" "/home/$name/.tarbs" "Downloading tarbs..." || error "Failed to download tarbs."
@@ -219,65 +252,47 @@ dialog --infobox "Installing (neo)vim plugins..." 4 50
 sudo -u "$name" nvim -E -c "PlugUpdate|visual|q|q" >/dev/null 2>&1
 
 # Enable services here.
-serviceinit NetworkManager cronie
+serviceinit NetworkManager cronie lightdm
+sudo systemctl enable NetworkManager
+sudo systemctl enable cronie
+sudo systemctl enable lightdm
 
 # Most important command! Get rid of the beep!
 systembeepoff
 
+# Set keyboard settings
+configurekeyboard
+
+# Change theme
+changetheme
+
+# Prepare for mutt-wizard install
+dialog --colors --title "Set up gpg?" --yes-label "Yes" --no-label "No" --yesno "Initiating gpg keygen. Please follow the instructions, and remember the email you insert." 14 70 || initgpg
+
 # This line, overwriting the `newperms` command above will allow the user to run
 # serveral important commands, `shutdown`, `reboot`, updating, etc. without a password.
 newperms "%wheel ALL=(ALL) ALL #TARBS
-%wheel ALL=(ALL) NOPASSWD: /usr/bin/shutdown,/usr/bin/reboot,/usr/bin/systemctl suspend,/usr/bin/wifi-menu,/usr/bin/mount,/usr/bin/umount,/usr/bin/pacman -Syu,/usr/bin/pacman -Syyu,/usr/bin/packer -Syu,/usr/bin/packer -Syyu,/usr/bin/systemctl restart NetworkManager,/usr/bin/rc-service NetworkManager restart,/usr/bin/pacman -Syyu --noconfirm,/usr/bin/loadkeys,/usr/bin/yay,/usr/bin/pacman -Syyuw --noconfirm"
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/openvpn, /usr/bin/pkill openvpn, /usr/bin/shutdown,/usr/bin/reboot,/usr/bin/systemctl suspend,/usr/bin/wifi-menu,/usr/bin/mount,/usr/bin/umount,/usr/bin/pacman -Syu,/usr/bin/pacman -Syyu,/usr/bin/packer -Syu,/usr/bin/packer -Syyu,/usr/bin/systemctl restart NetworkManager,/usr/bin/rc-service NetworkManager restart,/usr/bin/pacman -Syyu --noconfirm,/usr/bin/loadkeys,/usr/bin/yay,/usr/bin/pacman -Syyuw --noconfirm"
 
 # Last message! Install complete!
 finalize
 clear
 
-# Set keyboard settings
-sudo sed -i '/nb_NO/ s/#//' /etc/locale.gen
-sudo sed -i '/en_US/ s/#//' /etc/locale.gen
-sudo locale-gen
-sudo echo "LANG=en_US.utf8" >> /etc/locale.conf
-sudo echo 'LC_CTYPE="nb_NO.utf8"' >> /etc/locale.conf
-sudo echo 'LC_MESSAGES="en_US.utf8"' >> /etc/locale.conf
-sudo echo 'LC_COLLATE="en_US.utf8"' >> /etc/locale.conf
-localectl set-keymap no
-localectl set-x11-keymap no
-
 # Install plugin for i3 syntax highlighting
-# cd /home/$name/.config/nvim/plugged/
-# git clone https://github.com/PotatoesMaster/i3-vim-syntax.git
+cd /home/$name/.config/nvim/plugged/
+git clone https://github.com/PotatoesMaster/i3-vim-syntax.git
 
-# Replace greeter session with custom
-sudo sed -i '/greeter-session/ {s/^#//;s/=.*/=lightdm-webkit2-greeter/;}' /etc/lightdm/lightdm.conf
 
-# Replace theme with custom
-sudo sed -i '/^webkit_theme/ s/=.*/= litarvan/' /etc/lightdm/lightdm-webkit2-greeter.conf
 
-# Add custom profile picture on login screen
-sudo rm /usr/share/lightdm-webkit/themes/litarvan/images/default_user.png
-sudo cp -p /home/$name/.icons/default_user.png /usr/share/lightdm-webkit/themes/litarvan/images/
-
-# Make sure the login screen is started when booting
-sudo systemctl enable lightdm
-
-# Make sure the network manager starts on boot
-sudo systemctl enable NetworkManager
 
 # Installing and configuring dropbox.
-echo "Installing dropbox."
-cd /home/$name && wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
-# Installing linux dropbox script
-cd /home/$name && mkdir .dropbox
-cd /home/$name && wget -O - "https://www.dropbox.com/download?dl=packages/dropbox.py" > /home/$name/.dropbox/dropboxscript.py
-chmod 775 /home/$name/.dropbox/dropboxscript.py
-# Will autostart on boot
-/home/$name/.dropbox/dropboxscript.py autostart y
+#echo "Installing dropbox."
+#cd /home/$name && wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
+## Installing linux dropbox script
+#cd /home/$name && mkdir .dropbox
+#cd /home/$name && wget -O - "https://www.dropbox.com/download?dl=packages/dropbox.py" > /home/$name/.dropbox/dropboxscript.py
+#chmod 775 /home/$name/.dropbox/dropboxscript.py
+## Will autostart on boot
+#/home/$name/.dropbox/dropboxscript.py autostart y
 
-# Prepare for mutt-wizard install
-echo "Initiating gpg keygen. Please follow the instructions, and remember the email you insert."
-gpg2 --full-gen-key
-read -p "Write the email you used for gpg2: " gpgemail
-pass init $gpgemail
 
-echo "All done! Use the command pass --init <gpg2 email> and then use mw add to configure mutt."
