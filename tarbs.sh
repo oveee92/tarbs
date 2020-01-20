@@ -101,8 +101,8 @@ aurinstall() { \
 
 pipinstall() { \
 	dialog --title "TARBS Installation" --infobox "Installing the Python package \`$1\` ($n of $total). $1 $2" 5 70
-	command -v pip || pacman -S --noconfirm --needed python-pip >/dev/null 2>&1
-	yes | pip install "$1"
+	command -v pip || pacman -S --noconfirm --needed python-pip >/dev/null 2>&1 # Installs pip if not installed
+	python3 -m pip install "$1"
 	}
 
 installationloop() { \
@@ -248,8 +248,10 @@ putgitrepo "$tarbs" "/home/$name/.tarbs" "Downloading tarbs..." || error "Failed
 sudo -u "$name" mkdir -p "/home/$name/.config/nvim/autoload"
 curl "https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim" > "/home/$name/.config/nvim/autoload/plug.vim"
 dialog --infobox "Installing (neo)vim plugins..." 4 50
-(sleep 30 && killall nvim) &
 sudo -u "$name" nvim -E -c "PlugUpdate|visual|q|q" >/dev/null 2>&1
+# Install plugin for i3 syntax highlighting
+cd /home/$name/.config/nvim/plugged/
+git clone https://github.com/PotatoesMaster/i3-vim-syntax.git
 
 # Enable services here.
 serviceinit NetworkManager cronie lightdm
@@ -278,12 +280,8 @@ newperms "%wheel ALL=(ALL) ALL #TARBS
 finalize
 clear
 
-# Install plugin for i3 syntax highlighting
-cd /home/$name/.config/nvim/plugged/
-git clone https://github.com/PotatoesMaster/i3-vim-syntax.git
-
-
-
+#-------------------------------------------------
+# User level install
 
 # Installing and configuring dropbox.
 #echo "Installing dropbox."
@@ -295,4 +293,10 @@ git clone https://github.com/PotatoesMaster/i3-vim-syntax.git
 ## Will autostart on boot
 #/home/$name/.dropbox/dropboxscript.py autostart y
 
+#set gpg keys for
+# VPN
+# Keepass
+# Other
 
+# Set up mopidy service at user level
+# systemctl --user start mopidy
