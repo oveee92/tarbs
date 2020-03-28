@@ -86,7 +86,7 @@ maininstall() { # Installs all needed programs from main repo.
 
 gitmakeinstall() {
 	dir=$(mktemp -d)
-	dialog --title "TARBS Installation" --infobox "Installing \`$(basename "$1")\` ($n of $total) via \`git\` and \`make\`. $(basename "$1") $2" 5 70
+	dialog --title "TARBS Installation" --infobox "Installing \`$(basename "$1") \` ($n of $total) via \`git\` and \`make\`. $(basename "$1") $2" 5 70
 	git clone --depth 1 "$1" "$dir" >/dev/null 2>&1
 	cd "$dir" || exit
 	make >/dev/null 2>&1
@@ -273,13 +273,13 @@ serviceinit NetworkManager cronie lightdm
 systembeepoff
 
 # Set keyboard settings
-configurelocale
+configurelocale || error "Cannot configure locale."
 
 # Change theme
 changetheme
 
 # Prepare for mutt-wizard install
-dialog --colors --title "Set up gpg?" --yes-label "Yes" --no-label "No" --yesno "Initiating gpg keygen. Please follow the instructions, and remember the email you insert." 14 70 || initgpg
+#dialog --colors --title "Set up gpg?" --yes-label "Yes" --no-label "No" --yesno "Initiating gpg keygen. Please follow the instructions, and remember the email you insert." 14 70 || initgpg
 
 # This line, overwriting the `newperms` command above will allow the user to run
 # serveral important commands, `shutdown`, `reboot`, updating, etc. without a password.
@@ -312,10 +312,9 @@ sudo -u "$name" mkdir /home/$name/Downloads
 # Other
 
 # Set up mopidy service at user level, both now and at boot
-sudo -u "$name" systemctl --user enable mopidy --now
+sudo -u "$name" systemctl --user enable mopidy --now || error "Cannot enable mopidy"
 #sudo -u "$name" mopidy gmusic login
 
 # Last message! Install complete!
-
 finalize
 clear
