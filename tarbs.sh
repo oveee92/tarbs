@@ -22,7 +22,7 @@ esac done
 
 ### FUNCTIONS ###
 
-error() { clear; printf "ERROR:\\n%s\\n" "$1"; exit;}
+error() { clear; echo "ERROR: $1" >> /root/errors.txt; exit;}
 
 welcomemsg() { \
 	dialog --title "Welcome!" --msgbox "Welcome to T's Auto-Rice Bootstrapping Script!\\n\\nThis script will automatically install a fully-featured i3wm Arch Linux desktop, which I use as my main machine.\\n\\n-Ove" 10 60
@@ -64,11 +64,13 @@ refreshkeys() { \
 	pacman --noconfirm -Sy archlinux-keyring >/dev/null 2>&1
 	}
 
-newperms() { # Set special sudoers settings for install (or after).
+newperms() { \
+	# Set special sudoers settings for install (or after).
 	sed -i "/#TARBS/d" /etc/sudoers
 	echo "$* #TARBS" >> /etc/sudoers ;}
 
-manualinstall() { # Installs $1 manually if not installed. Used only for AUR helper here.
+manualinstall() { \
+	# Installs $1 manually if not installed. Used only for AUR helper here.
 	[ -f "/usr/bin/$1" ] || (
 	dialog --infobox "Installing \"$1\", an AUR helper..." 4 50
 	cd /tmp || exit
@@ -79,12 +81,13 @@ manualinstall() { # Installs $1 manually if not installed. Used only for AUR hel
 	sudo -u "$name" makepkg --noconfirm -si >/dev/null 2>&1
 	cd /tmp || return) ;}
 
-maininstall() { # Installs all needed programs from main repo.
+maininstall() { \
+	# Installs all needed programs from main repo.
 	dialog --title "TARBS Installation" --infobox "Installing \`$1\` ($n of $total). $1 $2" 5 70
 	pacman --noconfirm --needed -S "$1" >/dev/null 2>&1
 	}
 
-gitmakeinstall() {
+gitmakeinstall() { \
 	dir=$(mktemp -d)
 	dialog --title "TARBS Installation" --infobox "Installing \`$(basename "$1") \` ($n of $total) via \`git\` and \`make\`. $(basename "$1") $2" 5 70
 	git clone --depth 1 "$1" "$dir" >/dev/null 2>&1
@@ -120,7 +123,8 @@ installationloop() { \
 		esac
 	done < /tmp/progs.csv ;}
 
-putgitrepo() { # Downlods a gitrepo $1 and places the files in $2 only overwriting conflicts
+putgitrepo() { \
+	# Downlods a gitrepo $1 and places the files in $2 only overwriting conflicts
 	dialog --infobox "$3" 4 60
 	dir=$(mktemp -d)
 	[ ! -d "$2" ] && mkdir -p "$2" && chown -R "$name:wheel" "$2"
@@ -129,26 +133,29 @@ putgitrepo() { # Downlods a gitrepo $1 and places the files in $2 only overwriti
 	sudo -u "$name" cp -rfT "$dir/gitrepo" "$2"
 	}
 
-serviceinit() { for service in "$@"; do
+serviceinit() { \
+	for service in "$@"; do
 	dialog --infobox "Enabling \"$service\"..." 4 40
 	systemctl enable "$service"
 	systemctl start "$service"
 	done ;}
 
-systembeepoff() { dialog --infobox "Getting rid of that retarded error beep sound..." 10 50
+systembeepoff() { \
+	dialog --infobox "Getting rid of that retarded error beep sound..." 10 50
 	rmmod pcspkr
 	echo "blacklist pcspkr" > /etc/modprobe.d/nobeep.conf ;}
 
-resetpulse() { dialog --infobox "Reseting Pulseaudio..." 4 50
+resetpulse() { \
+	dialog --infobox "Reseting Pulseaudio..." 4 50
 	killall pulseaudio
 	sudo -n "$name" pulseaudio --start
 }
 
-configurelocale() {
+configurelocale() { \
 	sed -i '/nb_NO/ s/#//' /etc/locale.gen
 	sed -i '/en_US/ s/#//' /etc/locale.gen
 	locale-gen
-	echo "LANG=en_US.utf8" >> /etc/locale.conf
+	echo "LANG=en_US.utf8" > /etc/locale.conf
 	echo "LC_CTYPE=\"nb_NO.utf8\"" >> /etc/locale.conf
 	echo "LC_MESSAGES=\"en_US.utf8\"" >> /etc/locale.conf
 	echo "LC_COLLATE=\"en_US.utf8\"" >> /etc/locale.conf
@@ -158,30 +165,30 @@ configurelocale() {
 }
 
 
-downloadwallpapers() {
+downloadwallpapers() { \
 	# Download wallpapers from github
 	dialog --colors --title "Download Ove's wallpapers?" --yes-label "Yes!" --no-label "I'll find my own." --yesno "Allright, stand by. This might take a while as the repo is pretty big!" 14 70 \
 		|| putgitrepo "$wallpapers" "/home/$name/Pictures/wallpapers" "Downloading wallpapers..." \
 		|| error "Failed to download wallpapers."
 }
 
-installdotfiles() {
+installdotfiles() { \
 	putgitrepo "$dotfilesrepo" "/home/$name" "Installing dotfiles..." || error "Failed to download dotfiles."
 	rm -f "/home/$name/README.md" "/home/$name/LICENSE"	|| error "Failed to delete README.md and LICENSE"
 }
 
-changetheme() {
+changetheme() { \
 	# Replace greeter session with custom if installed
-	pacman -Qi lightdm-webkit2-greeter 2>/dev/null || sudo sed -i '/greeter-session/ {s/^#//;s/=.*/=lightdm-webkit2-greeter/;}' /etc/lightdm/lightdm.conf
+	pacman -Qi lightdm-webkit2-greeter 2>/dev/null && sed -i '/greeter-session/ {s/^#//;s/=.*/=lightdm-webkit2-greeter/;}' /etc/lightdm/lightdm.conf
 
 	# Replace theme with custom (litarvan) if installed
-	pacman -Qi lightdm-webkit-theme-litarvan 2>/dev/null || sudo sed -i '/^webkit_theme/ s/=.*/= litarvan/' /etc/lightdm/lightdm-webkit2-greeter.conf
+	pacman -Qi lightdm-webkit-theme-litarvan 2>/dev/null && sed -i '/^webkit_theme/ s/=.*/= litarvan/' /etc/lightdm/lightdm-webkit2-greeter.conf
 
 	# Add custom profile picture on login screen if litarvan is installed and if picture exists
-	pacman -Qi lightdm-webkit-theme-litarvan 2>/dev/null || sudo cp -p /home/$name/.icons/default_user.png /usr/share/lightdm-webkit/themes/litarvan/images/default_user.png
+#	pacman -Qi lightdm-webkit-theme-litarvan 2>/dev/null || sudo cp -p /home/$name/.icons/default_user.png /usr/share/lightdm-webkit/themes/litarvan/images/default_user.png
 }
 
-initgpg() {
+initgpg() { \
 	echo "Initiating gpg keygen. Please follow the instructions, and remember the email you insert."
 	gpg2 --full-gen-key
 	read -p "Write the email you used for gpg2: " gpgemail
