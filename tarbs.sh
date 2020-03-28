@@ -155,6 +155,18 @@ configurekeyboard() {
 	localectl set-keymap no
 }
 
+downloadwallpapers() {
+	# Download wallpapers from github
+	dialog --colors --title "Download Ove's wallpapers?" --yes-label "Yes!" --no-label "I'll find my own." --yesno "Allright, stand by. This might take a while as the repo is pretty big!" 14 70 \
+		|| putgitrepo "$wallpapers" "/home/$name/Pictures/wallpapers" "Downloading wallpapers..." \
+		|| error "Failed to download wallpapers."
+}
+
+installdotfiles() {
+	putgitrepo "$dotfilesrepo" "/home/$name" "Installing dotfiles..." || error "Failed to download dotfiles."
+	rm -f "/home/$name/README.md" "/home/$name/LICENSE"	|| error "Failed to delete README.md and LICENSE"
+}
+
 changetheme() {
 	# Replace greeter session with custom if installed
 	pacman -Qi lightdm-webkit2-greeter 2>/dev/null || sudo sed -i '/greeter-session/ {s/^#//;s/=.*/=lightdm-webkit2-greeter/;}' /etc/lightdm/lightdm.conf
@@ -230,13 +242,10 @@ manualinstall $aurhelper || error "Failed to install AUR helper."
 installationloop
 
 # Install the dotfiles in the user's home directory
-putgitrepo "$dotfilesrepo" "/home/$name" "Installing dotfiles..." || error "Failed to download dotfiles."
-rm -f "/home/$name/README.md" "/home/$name/LICENSE"
+installdotfiles || error "Could not install dotfiles."
 
-# Download wallpapers from github
-dialog --colors --title "Download Ove's wallpapers?" --yes-label "Yes!" --no-label "I'll find my own." --yesno "Allright, stand by. This might take a while as the repo is pretty big!" 14 70 \
-	|| putgitrepo "$wallpapers" "/home/$name/Pictures/wallpapers" "Downloading wallpapers..." \
-	|| error "Failed to download wallpapers."
+# Download the desktop background wallpapers from github
+downloadwallpapers || error "Could not download wallpapers."
 
 # Download the tarbs repo from github
 putgitrepo "$tarbs" "/home/$name/.tarbs" "Downloading tarbs..." || error "Failed to download tarbs."
@@ -249,6 +258,7 @@ sudo -u "$name" mkdir -p "/home/$name/.config/nvim/autoload"
 curl "https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim" > "/home/$name/.config/nvim/autoload/plug.vim"
 dialog --infobox "Installing (neo)vim plugins..." 4 50
 sudo -u "$name" nvim -E -c "PlugUpdate|visual|q|q" >/dev/null 2>&1
+
 # Install plugin for i3 syntax highlighting
 cd /home/$name/.config/nvim/plugged/
 git clone https://github.com/PotatoesMaster/i3-vim-syntax.git
@@ -284,19 +294,19 @@ clear
 # User level install
 
 # Installing and configuring dropbox.
-#echo "Installing dropbox."
-#cd /home/$name && wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
-## Installing linux dropbox script
-#cd /home/$name && mkdir .dropbox
-#cd /home/$name && wget -O - "https://www.dropbox.com/download?dl=packages/dropbox.py" > /home/$name/.dropbox/dropboxscript.py
-#chmod 775 /home/$name/.dropbox/dropboxscript.py
-## Will autostart on boot
-#/home/$name/.dropbox/dropboxscript.py autostart y
+echo "Installing dropbox."
+cd /home/$name && wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
+# Installing linux dropbox script
+cd /home/$name && mkdir .dropbox
+cd /home/$name && wget -O - "https://www.dropbox.com/download?dl=packages/dropbox.py" > /home/$name/.dropbox/dropboxscript.py
+chmod 775 /home/$name/.dropbox/dropboxscript.py
+# Will autostart on boot
+/home/$name/.dropbox/dropboxscript.py autostart y
 
 #set gpg keys for
 # VPN
 # Keepass
 # Other
 
-# Set up mopidy service at user level
-# systemctl --user start mopidy
+# Set up mopidy service at user level, both now and at boot
+systemctl --user enable mopidy --now
