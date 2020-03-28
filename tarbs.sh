@@ -273,9 +273,6 @@ sudo -u "$name" nvim -E -c "PlugUpdate|visual|q|q" >/dev/null 2>&1
 cd /home/$name/.config/nvim/plugged/
 git clone https://github.com/PotatoesMaster/i3-vim-syntax.git
 
-# Enable services here.
-serviceinit NetworkManager cronie lightdm
-
 # Most important command! Get rid of the beep!
 systembeepoff
 
@@ -318,10 +315,14 @@ sudo -u "$name" mkdir /home/$name/Downloads
 # Keepass
 # Other
 
+# Enable services here.
+serviceinit NetworkManager cronie
+
 # Set up mopidy service at user level, both now and at boot
 sudo -u "$name" systemctl --user enable mopidy --now || error "Cannot enable mopidy"
 #sudo -u "$name" mopidy gmusic login
 
 # Last message! Install complete!
 finalize
+serviceinit lightdm
 clear
